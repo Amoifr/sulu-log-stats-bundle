@@ -37,12 +37,12 @@ final class SuluLogStatsBundle extends AbstractBundle
                     ->defaultValue('UTC')
                 ->end()
                 ->arrayNode('page_views')
-                    ->info('Which successful GET requests are not counted as page views.')
+                    ->info('Which successful GET requests are not counted as page views. Prefixes match whole path segments.')
                     ->addDefaultsIfNotSet()
                     ->children()
                         ->arrayNode('excluded_path_prefixes')
                             ->scalarPrototype()->end()
-                            ->defaultValue(['/admin', '/_', '/build', '/bundles', '/uploads', '/media'])
+                            ->defaultValue(['/admin', '/_profiler', '/_wdt', '/_fragment', '/build', '/bundles', '/uploads', '/media'])
                         ->end()
                         ->arrayNode('excluded_extensions')
                             ->scalarPrototype()->end()
@@ -89,5 +89,7 @@ final class SuluLogStatsBundle extends AbstractBundle
             ->set('amoifr_log_stats.page_views.excluded_path_prefixes', $config['page_views']['excluded_path_prefixes'])
             ->set('amoifr_log_stats.page_views.excluded_extensions', $config['page_views']['excluded_extensions'])
             ->set('amoifr_log_stats.bot_user_agent_pattern', $config['bot_user_agent_pattern']);
+
+        $container->import(\dirname(__DIR__).'/config/services.php');
     }
 }

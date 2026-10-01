@@ -11,11 +11,9 @@ use Amoifr\SuluLogStatsBundle\Entity\HourlyTraffic;
 use Amoifr\SuluLogStatsBundle\Entity\SourceCursor;
 use Amoifr\SuluLogStatsBundle\Entity\VisitorDigest;
 use Amoifr\SuluLogStatsBundle\Entity\VisitorSalt;
-use Doctrine\DBAL\DriverManager;
+use Amoifr\SuluLogStatsBundle\Tests\TestEntityManager;
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Doctrine\ORM\EntityManager;
-use Doctrine\ORM\ORMSetup;
-use Doctrine\ORM\Tools\SchemaTool;
 use Doctrine\ORM\Tools\SchemaValidator;
 use PHPUnit\Framework\Attributes\RequiresPhpExtension;
 use PHPUnit\Framework\Attributes\Test;
@@ -28,13 +26,7 @@ final class MappingTest extends TestCase
 
     protected function setUp(): void
     {
-        $config = ORMSetup::createAttributeMetadataConfig([\dirname(__DIR__, 3).'/src/Entity'], true);
-        if (\PHP_VERSION_ID >= 80400 && method_exists($config, 'enableNativeLazyObjects')) {
-            $config->enableNativeLazyObjects(true);
-        }
-
-        $this->em = new EntityManager(DriverManager::getConnection(['driver' => 'pdo_sqlite', 'memory' => true], $config), $config);
-        (new SchemaTool($this->em))->createSchema($this->em->getMetadataFactory()->getAllMetadata());
+        $this->em = TestEntityManager::create();
     }
 
     #[Test]
