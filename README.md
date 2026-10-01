@@ -210,7 +210,9 @@ the container, so they are not in its logs.
 - **Page view**: a successful (200) GET of a page path by a human visitor. The admin, `/_profiler`, `/_wdt`,
   `/_fragment`, `/build`, `/bundles`, `/uploads` and `/media`, and files with an asset extension (`css`, `js`,
   images, fonts…) are not pages. Prefixes match whole path segments: `/admin` leaves `/administration` counted.
-- **Bot**: a request without a user agent, or whose user agent matches `bot_user_agent_pattern`.
+- **Bot**: a request without a user agent, or whose user agent matches `bot_user_agent_pattern`. The default
+  pattern also catches cache warmers (`warm`), which would otherwise count every warmed page as a visit after
+  each deployment.
 - **Unique visitors**: per day, a hash of the client address and user agent, salted with a random value drawn
   for that day. Two hours after midnight, the day is closed: its salt and hashes are deleted and only the count
   remains. Over a period, the dashboard adds up the daily counts: someone coming back another day counts again.
@@ -231,7 +233,7 @@ amoifr_log_stats:
     page_views:
         excluded_path_prefixes: ['/admin', '/_profiler', '/_wdt', '/_fragment', '/build', '/bundles', '/uploads', '/media']
         excluded_extensions: [css, js, map, json, xml, txt, ico, png, jpg, jpeg, gif, svg, webp, avif, woff, woff2, ttf, eot, pdf]
-    bot_user_agent_pattern: '~bot|crawl|spider|slurp|curl|wget|python|httpclient|headless|lighthouse|monitor|uptime~i'
+    bot_user_agent_pattern: '~bot|crawl|spider|slurp|curl|wget|python|httpclient|headless|lighthouse|monitor|uptime|warm~i'
 ```
 
 ## License

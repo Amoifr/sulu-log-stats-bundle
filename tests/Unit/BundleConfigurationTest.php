@@ -29,6 +29,7 @@ final class BundleConfigurationTest extends TestCase
         self::assertContains('/admin', $config['page_views']['excluded_path_prefixes']);
         self::assertContains('css', $config['page_views']['excluded_extensions']);
         self::assertSame(1, preg_match($config['bot_user_agent_pattern'], 'Mozilla/5.0 (compatible; Googlebot/2.1)'));
+        self::assertSame(1, preg_match($config['bot_user_agent_pattern'], 'ts-cache-warmer'), 'a cache warmer is not a visitor');
         self::assertSame(0, preg_match($config['bot_user_agent_pattern'], 'Mozilla/5.0 (X11; Linux x86_64) Firefox/131.0'));
     }
 

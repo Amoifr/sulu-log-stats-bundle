@@ -54,7 +54,7 @@ final class SuluLogStatsBundle extends AbstractBundle
                 ->end()
                 ->scalarNode('bot_user_agent_pattern')
                     ->info('A request whose user agent matches this regular expression is counted as a bot.')
-                    ->defaultValue('~bot|crawl|spider|slurp|curl|wget|python|httpclient|headless|lighthouse|monitor|uptime~i')
+                    ->defaultValue('~bot|crawl|spider|slurp|curl|wget|python|httpclient|headless|lighthouse|monitor|uptime|warm~i')
                 ->end()
             ->end();
     }
