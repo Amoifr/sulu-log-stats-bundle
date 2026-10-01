@@ -175,8 +175,16 @@ export default class LogStatsDashboard extends React.Component<Props, State> {
             ['bot_share', formatPercent(totals.botRequests, totals.requests)],
             ['client_errors', formatNumber(classes['4'] || 0), formatPercent(classes['4'] || 0, totals.requests)],
             ['server_errors', formatNumber(classes['5'] || 0), formatPercent(classes['5'] || 0, totals.requests)],
-            ['average_response_time', formatMs(responseTime ? responseTime.averageMs : undefined)],
-            ['p95_response_time', formatPercentile(responseTime ? responseTime.p95 : undefined)],
+            [
+                'average_response_time',
+                formatMs(responseTime ? responseTime.averageMs : undefined),
+                responseTime ? undefined : translate('amoifr_log_stats.no_durations_short'),
+            ],
+            [
+                'p95_response_time',
+                formatPercentile(responseTime ? responseTime.p95 : undefined),
+                responseTime ? undefined : translate('amoifr_log_stats.no_durations_short'),
+            ],
             ['bytes', formatBytes(totals.bytes)],
         ];
 
@@ -221,9 +229,29 @@ export default class LogStatsDashboard extends React.Component<Props, State> {
         const traffic = {
             datasets: [
                 line(translate('amoifr_log_stats.page_views'), data.days.map((day) => day.pageViews), series[0]),
-                line(translate('amoifr_log_stats.visitors'), data.days.map((day) => day.visitors), series[1]),
+                {
+                    ...line(translate('amoifr_log_stats.visitors'), data.days.map((day) => day.visitors), series[1]),
+                    yAxisID: 'visitors',
+                },
             ],
             labels,
+        };
+
+        // page views on the left axis, visitors on the right one: each axis is named after its series and
+        // drawn in its color, so that no value is read against the wrong scale
+        const axisTitle = (text) => ({display: true, text});
+        const trafficOptions = {
+            scales: {
+                visitors: {
+                    border: {color: series[1], width: 2},
+                    position: 'right',
+                    title: axisTitle(translate('amoifr_log_stats.visitors')),
+                },
+                y: {
+                    border: {color: series[0], width: 2},
+                    title: axisTitle(translate('amoifr_log_stats.page_views')),
+                },
+            },
         };
 
         const statuses = {
@@ -266,13 +294,19 @@ export default class LogStatsDashboard extends React.Component<Props, State> {
             labels,
         };
 
-        const milliseconds = {scales: {y: {ticks: {callback: (value) => formatMs(value)}}}};
+        const milliseconds = {scales: {y: {ticks: {callback: (value) => formatMs(value), precision: 0}}}};
+        const hasDurations = data.days.some((day) => !!day.responseTime);
 
         return (
             <div className={styles.charts}>
                 <section className={styles.card}>
                     <h3>{translate('amoifr_log_stats.chart_traffic')}</h3>
-                    <ChartCanvas data={traffic} label={translate('amoifr_log_stats.chart_traffic')} type="line" />
+                    <ChartCanvas
+                        data={traffic}
+                        label={translate('amoifr_log_stats.chart_traffic')}
+                        options={trafficOptions}
+                        type="line"
+                    />
                 </section>
                 <section className={styles.card}>
                     <h3>{translate('amoifr_log_stats.chart_status')}</h3>
@@ -294,12 +328,17 @@ export default class LogStatsDashboard extends React.Component<Props, State> {
                 </section>
                 <section className={styles.card}>
                     <h3>{translate('amoifr_log_stats.chart_response_time')}</h3>
-                    <ChartCanvas
-                        data={responseTimes}
-                        label={translate('amoifr_log_stats.chart_response_time')}
-                        options={milliseconds}
-                        type="line"
-                    />
+                    {hasDurations
+                        ? (
+                            <ChartCanvas
+                                data={responseTimes}
+                                label={translate('amoifr_log_stats.chart_response_time')}
+                                options={milliseconds}
+                                type="line"
+                            />
+                        )
+                        : <span className={styles.empty}>{translate('amoifr_log_stats.no_durations')}</span>
+                    }
                 </section>
             </div>
         );

@@ -69,11 +69,37 @@ export default class ChartCanvas extends React.Component<Props> {
                 tooltip: {boxPadding: 4},
                 ...options.plugins,
             },
-            scales: {
-                x: {...axis, grid: {display: false}, ...(options.scales || {}).x},
-                y: {...axis, beginAtZero: true, ...(options.scales || {}).y},
-            },
+            scales: this.scales(axis),
         };
+    }
+
+    scales(axis: Object): Object {
+        const {options = {}} = this.props;
+        const value = {...axis, beginAtZero: true, ticks: {...axis.ticks, precision: 0}};
+
+        const scales = {
+            // horizontal labels, some skipped when they don't fit, rather than a slanted crowd
+            x: this.scale({...axis, grid: {display: false}, ticks: {...axis.ticks, autoSkipPadding: 12, maxRotation: 0}}, 'x'),
+            // counts and milliseconds are whole numbers: no 0.2 tick shown as a rounded duplicate
+            y: this.scale(value, 'y'),
+        };
+
+        // an extra value axis (eg: a second one on the right) keeps its grid off the plot: one grid only
+        Object.keys(options.scales || {}).filter((name) => !(name in scales)).forEach((name) => {
+            scales[name] = this.scale({...value, grid: {...value.grid, drawOnChartArea: false}}, name);
+        });
+
+        return scales;
+    }
+
+    /**
+     * An axis of the chart: the shared defaults, then what the chart sets, ticks merged rather than replaced.
+     */
+    scale(defaults: Object, axis: string): Object {
+        const {options = {}} = this.props;
+        const own = (options.scales || {})[axis] || {};
+
+        return {...defaults, ...own, ticks: {...defaults.ticks, ...own.ticks}};
     }
 
     setCanvas = (canvas: ?HTMLCanvasElement) => {

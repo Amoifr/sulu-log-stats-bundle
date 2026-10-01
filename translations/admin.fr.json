@@ -36,5 +36,7 @@
     "amoifr_log_stats.day": "Jour",
     "amoifr_log_stats.no_data": "Pas encore de statistiques sur cette période. Elles apparaissent une fois que la commande amoifr:log-stats:import a lu les logs du serveur.",
     "amoifr_log_stats.error_loading": "Les statistiques n'ont pas pu être chargées.",
-    "amoifr_log_stats.error_routes_missing": "L'API des statistiques est injoignable : importez les routes du bundle (config/routes/admin_api.yaml) avec le préfixe /admin/api."
+    "amoifr_log_stats.error_routes_missing": "L'API des statistiques est injoignable : importez les routes du bundle (config/routes/admin_api.yaml) avec le préfixe /admin/api.",
+    "amoifr_log_stats.no_durations_short": "Pas de durées dans les logs lus",
+    "amoifr_log_stats.no_durations": "Les logs lus ne contiennent pas de durées. Ajoutez-les avec le format nginx_timed ou apache_timed, ou lisez le log d’accès PHP du connecteur Upsun."
 }
