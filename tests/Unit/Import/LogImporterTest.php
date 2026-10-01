@@ -227,6 +227,19 @@ final class LogImporterTest extends TestCase
     }
 
     #[Test]
+    public function days_follow_the_configured_time_zone(): void
+    {
+        // 23:30 UTC on September 30th is already October 1st in Paris; the hour stays in UTC
+        $this->write($this->access, [self::access('23:30:00', '203.0.113.1', 'GET /fr', 200, 100, day: '30/Sep/2026')]);
+
+        $this->importer(['access' => $this->access], timezone: 'Europe/Paris')->importAll();
+
+        self::assertSame(1, $this->visitors('2026-10-01'));
+        self::assertNull($this->visitors('2026-09-30'));
+        self::assertSame(['2026-09-30 23:00 200' => [1, 1, 0, 100]], $this->traffic());
+    }
+
+    #[Test]
     public function it_reports_a_missing_file(): void
     {
         [$report] = $this->importer(['access' => $this->access.'.missing'])->importAll();
@@ -237,7 +250,7 @@ final class LogImporterTest extends TestCase
     /**
      * @param array<string, string> $files
      */
-    private function importer(array $files, int $chunkSize = 20_000): LogImporter
+    private function importer(array $files, int $chunkSize = 20_000, string $timezone = 'UTC'): LogImporter
     {
         $sources = [];
         foreach ($files as $name => $path) {
@@ -253,6 +266,7 @@ final class LogImporterTest extends TestCase
             new VisitorDays($this->em),
             $this->clock,
             $sources,
+            $timezone,
             $chunkSize,
         );
     }

@@ -8,7 +8,7 @@ use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
 /**
- * Response times of one day (UTC), kept as a histogram: unlike a percentile, histograms of several
+ * Response times of one day (in the configured time zone), kept as a histogram: unlike a percentile, histograms of several
  * days can be added up, so the percentile of any period can be computed afterwards.
  */
 #[ORM\Entity]

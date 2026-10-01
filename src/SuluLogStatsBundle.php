@@ -33,7 +33,7 @@ final class SuluLogStatsBundle extends AbstractBundle
                     ->end()
                 ->end()
                 ->scalarNode('timezone')
-                    ->info('Time zone the admin dashboard displays the statistics in. They are stored in UTC.')
+                    ->info('Time zone whose calendar days the daily statistics follow, and the dashboard shows. Set it before the first import: days already stored are not shifted.')
                     ->defaultValue('UTC')
                 ->end()
                 ->arrayNode('page_views')

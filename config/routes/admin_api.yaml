@@ -1,0 +1,10 @@
+# Import with the admin API prefix, in config/routes/amoifr_log_stats.yaml of the application:
+#
+#   amoifr_log_stats:
+#       resource: '@SuluLogStatsBundle/config/routes/admin_api.yaml'
+#       prefix: /admin/api
+
+amoifr_log_stats.dashboard_api:
+    path: /log-stats
+    methods: [GET]
+    controller: Amoifr\SuluLogStatsBundle\Controller\DashboardController

@@ -13,19 +13,22 @@ use Amoifr\SuluLogStatsBundle\Log\LogEntry;
  * An entry carrying a client address (an access log) counts towards traffic, pages and visitors; an
  * entry carrying a duration (a PHP access log) towards response times. The two logs describe the same
  * requests, so neither is counted twice when both are imported.
+ *
+ * Hours are UTC hours, so that they can be shown in any time zone. Days are calendar days in the
+ * configured time zone, since a daily count of visitors can't be shifted afterwards.
  */
 final class Aggregator
 {
     /** @var array<string, array<int, array{requests: int, pageViews: int, botRequests: int, bytes: int}>> by UTC hour, then status */
     private array $traffic = [];
 
-    /** @var array<string, array<string, array{views: int, notFound: int, serverErrors: int}>> by UTC day, then path */
+    /** @var array<string, array<string, array{views: int, notFound: int, serverErrors: int}>> by day, then path */
     private array $pages = [];
 
-    /** @var array<string, array<string, true>> visitor digests by UTC day */
+    /** @var array<string, array<string, true>> visitor digests by day */
     private array $visitors = [];
 
-    /** @var array<string, array{requests: int, totalMs: float, histogram: array<string, int>}> by UTC day */
+    /** @var array<string, array{requests: int, totalMs: float, histogram: array<string, int>}> by day */
     private array $responseTimes = [];
 
     /**
@@ -34,12 +37,13 @@ final class Aggregator
     public function __construct(
         private readonly RequestClassifier $classifier,
         private readonly \Closure $visitorSalt,
+        private readonly \DateTimeZone $timezone = new \DateTimeZone('UTC'),
     ) {
     }
 
     public function add(LogEntry $entry): void
     {
-        $day = $entry->time->format('Y-m-d');
+        $day = $entry->time->setTimezone($this->timezone)->format('Y-m-d');
 
         if (null !== $entry->clientIp) {
             $this->addTraffic($entry, $day);
@@ -121,7 +125,7 @@ final class Aggregator
             $this->pages[$day][$entry->path] = $page;
         }
 
-        if ($isPageView && null !== $salt = ($this->visitorSalt)($entry->time->setTime(0, 0))) {
+        if ($isPageView && null !== $salt = ($this->visitorSalt)(new \DateTimeImmutable($day))) {
             $this->visitors[$day][hash('sha256', $salt.'|'.$entry->clientIp.'|'.$entry->userAgent)] = true;
         }
     }

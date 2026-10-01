@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace Symfony\Component\DependencyInjection\Loader\Configurator;
 
+use Amoifr\SuluLogStatsBundle\Admin\LogStatsAdmin;
 use Amoifr\SuluLogStatsBundle\Command\ImportLogsCommand;
+use Amoifr\SuluLogStatsBundle\Controller\DashboardController;
 use Amoifr\SuluLogStatsBundle\Import\AggregateWriter;
 use Amoifr\SuluLogStatsBundle\Import\LogFileReader;
 use Amoifr\SuluLogStatsBundle\Import\LogImporter;
@@ -14,6 +16,7 @@ use Amoifr\SuluLogStatsBundle\Log\Parser\LogParserInterface;
 use Amoifr\SuluLogStatsBundle\Log\Parser\NginxCombinedParser;
 use Amoifr\SuluLogStatsBundle\Log\Parser\ParserRegistry;
 use Amoifr\SuluLogStatsBundle\Log\Parser\UpsunPhpAccessParser;
+use Amoifr\SuluLogStatsBundle\Statistics\DashboardStatistics;
 
 return static function (ContainerConfigurator $container): void {
     $services = $container->services()
@@ -40,7 +43,16 @@ return static function (ContainerConfigurator $container): void {
     $services->set(AggregateWriter::class);
     $services->set(VisitorDays::class);
     $services->set(LogImporter::class)
-        ->arg('$sources', param('amoifr_log_stats.sources'));
+        ->arg('$sources', param('amoifr_log_stats.sources'))
+        ->arg('$timezone', param('amoifr_log_stats.timezone'));
 
     $services->set(ImportLogsCommand::class);
+
+    $services->set(DashboardStatistics::class)
+        ->arg('$timezone', param('amoifr_log_stats.timezone'));
+    $services->set(DashboardController::class)
+        ->public()
+        ->tag('controller.service_arguments');
+    $services->set(LogStatsAdmin::class)
+        ->arg('$timezone', param('amoifr_log_stats.timezone'));
 };

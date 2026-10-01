@@ -18,7 +18,7 @@ use Psr\Clock\ClockInterface;
 final class LogImporter
 {
     /**
-     * Days whose last lines may still be waiting in a log are kept open this long after midnight (UTC).
+     * Days whose last lines may still be waiting in a log are kept open this long after midnight.
      */
     private const DAY_CLOSING_DELAY = 'PT2H';
 
@@ -34,6 +34,7 @@ final class LogImporter
         private readonly VisitorDays $visitorDays,
         private readonly ClockInterface $clock,
         private readonly array $sources,
+        private readonly string $timezone = 'UTC',
         private readonly int $chunkSize = 20_000,
     ) {
     }
@@ -48,7 +49,7 @@ final class LogImporter
             $reports[] = $this->import($name, $source['path'], $source['format']);
         }
 
-        $this->visitorDays->closeBefore($this->clock->now()->setTimezone(new \DateTimeZone('UTC'))->sub(new \DateInterval(self::DAY_CLOSING_DELAY)));
+        $this->visitorDays->closeBefore($this->clock->now()->setTimezone(new \DateTimeZone($this->timezone))->sub(new \DateInterval(self::DAY_CLOSING_DELAY)));
 
         return $reports;
     }
@@ -70,7 +71,7 @@ final class LogImporter
         // after losing track, the top of the file may hold lines imported already: skip what is older
         $notBefore = $point->lostTrack ? $cursor->getLastEntryTime() : null;
 
-        $aggregator = new Aggregator($this->classifier, $this->visitorDays->saltFor(...));
+        $aggregator = new Aggregator($this->classifier, $this->visitorDays->saltFor(...), new \DateTimeZone($this->timezone));
         $offset = $point->offset;
         // the line ending at the resume point is still the one read last, unless track was lost
         $lastHash = $point->lostTrack ? null : $cursor->getLastLineHash();

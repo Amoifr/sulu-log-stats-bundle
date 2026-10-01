@@ -8,7 +8,7 @@ use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
 /**
- * Views and errors of one path on one day (UTC).
+ * Views and errors of one path on one day (in the configured time zone).
  */
 #[ORM\Entity]
 #[ORM\Table(name: 'als_daily_page')]

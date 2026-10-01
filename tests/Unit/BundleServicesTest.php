@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace Amoifr\SuluLogStatsBundle\Tests\Unit;
 
+use Amoifr\SuluLogStatsBundle\Admin\LogStatsAdmin;
 use Amoifr\SuluLogStatsBundle\Command\ImportLogsCommand;
+use Amoifr\SuluLogStatsBundle\Controller\DashboardController;
 use Amoifr\SuluLogStatsBundle\Import\LogImporter;
 use Amoifr\SuluLogStatsBundle\Log\Parser\ParserRegistry;
 use Amoifr\SuluLogStatsBundle\SuluLogStatsBundle;
@@ -14,9 +16,13 @@ use PHPUnit\Framework\Attributes\RequiresPhpExtension;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Psr\Clock\ClockInterface;
+use Sulu\Bundle\AdminBundle\Admin\View\ViewBuilderFactory;
+use Sulu\Bundle\AdminBundle\Admin\View\ViewBuilderFactoryInterface;
+use Sulu\Component\Security\Authorization\SecurityCheckerInterface;
 use Symfony\Component\Clock\MockClock;
 use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
+use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 
 #[RequiresPhpExtension('pdo_sqlite')]
 final class BundleServicesTest extends TestCase
@@ -31,6 +37,9 @@ final class BundleServicesTest extends TestCase
 
         self::assertInstanceOf(ImportLogsCommand::class, $container->get(ImportLogsCommand::class));
         self::assertInstanceOf(LogImporter::class, $container->get(LogImporter::class));
+        self::assertInstanceOf(DashboardController::class, $container->get(DashboardController::class));
+        self::assertInstanceOf(LogStatsAdmin::class, $container->get(LogStatsAdmin::class));
+        self::assertTrue($container->getDefinition(LogStatsAdmin::class)->isAutoconfigured(), 'Sulu tags its Admin classes by autoconfiguration');
 
         $parsers = $container->get(ParserRegistry::class);
         self::assertInstanceOf(ParserRegistry::class, $parsers);
@@ -52,6 +61,9 @@ final class BundleServicesTest extends TestCase
         // what the host application provides
         $container->register(EntityManagerInterface::class)->setSynthetic(true);
         $container->register(ClockInterface::class, MockClock::class);
+        $container->register(ViewBuilderFactoryInterface::class, ViewBuilderFactory::class);
+        $container->register(SecurityCheckerInterface::class)->setSynthetic(true);
+        $container->register(UrlGeneratorInterface::class)->setSynthetic(true);
 
         $container->addCompilerPass(new class implements CompilerPassInterface {
             public function process(ContainerBuilder $container): void
@@ -66,6 +78,8 @@ final class BundleServicesTest extends TestCase
 
         $container->compile();
         $container->set(EntityManagerInterface::class, TestEntityManager::create());
+        $container->set(SecurityCheckerInterface::class, $this->createStub(SecurityCheckerInterface::class));
+        $container->set(UrlGeneratorInterface::class, $this->createStub(UrlGeneratorInterface::class));
 
         return $container;
     }

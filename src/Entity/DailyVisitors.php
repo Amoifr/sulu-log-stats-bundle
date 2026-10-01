@@ -8,7 +8,7 @@ use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
 /**
- * Unique visitors of one day (UTC). Only this count is kept: the digests it comes from are deleted
+ * Unique visitors of one day (in the configured time zone). Only this count is kept: the digests it comes from are deleted
  * once the day is closed.
  */
 #[ORM\Entity]
