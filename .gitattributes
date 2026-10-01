@@ -1,0 +1,5 @@
+# Left out of the archives Composer installs. assets/ stays: the host project builds its admin from it.
+/.gitattributes export-ignore
+/.gitignore export-ignore
+/phpunit.xml.dist export-ignore
+/tests export-ignore

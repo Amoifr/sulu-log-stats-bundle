@@ -23,11 +23,8 @@ What the dashboard shows, over any period of days:
 
 ### 1. Install the package
 
-The bundle is not on Packagist yet: declare its repository first.
-
 ```bash
-composer config repositories.sulu-log-stats-bundle vcs https://github.com/Amoifr/sulu-log-stats-bundle
-composer require amoifr/sulu-log-stats-bundle:dev-main
+composer require amoifr/sulu-log-stats-bundle
 ```
 
 Symfony Flex registers `Amoifr\SuluLogStatsBundle\SuluLogStatsBundle` in `config/bundles.php`. Without Flex, add it
