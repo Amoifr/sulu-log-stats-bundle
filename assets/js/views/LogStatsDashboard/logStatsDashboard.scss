@@ -127,7 +127,7 @@ $gridline: #e1e0d9;
     }
 }
 
-// the canvas fills this box, axis labels included: no nested scroll
+/* the canvas fills this box, axis labels included: no nested scroll */
 .chart {
     height: 260px;
     position: relative;
