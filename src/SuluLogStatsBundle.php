@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace Amoifr\SuluLogStatsBundle;
 
-use Amoifr\SuluLogStatsBundle\Log\Parser\NginxCombinedParser;
-use Amoifr\SuluLogStatsBundle\Log\Parser\UpsunPhpAccessParser;
+use Amoifr\SuluLogStatsBundle\Connector\Upsun\UpsunPhpAccessParser;
+use Amoifr\SuluLogStatsBundle\Log\Parser\ApacheTimedParser;
+use Amoifr\SuluLogStatsBundle\Log\Parser\CombinedParser;
+use Amoifr\SuluLogStatsBundle\Log\Parser\NginxTimedParser;
 use Symfony\Component\Config\Definition\Configurator\DefinitionConfigurator;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
@@ -26,7 +28,7 @@ final class SuluLogStatsBundle extends AbstractBundle
                         ->children()
                             ->scalarNode('path')->isRequired()->cannotBeEmpty()->end()
                             ->enumNode('format')
-                                ->values([NginxCombinedParser::getFormat(), UpsunPhpAccessParser::getFormat()])
+                                ->values([CombinedParser::getFormat(), NginxTimedParser::getFormat(), ApacheTimedParser::getFormat(), UpsunPhpAccessParser::getFormat()])
                                 ->isRequired()
                             ->end()
                         ->end()

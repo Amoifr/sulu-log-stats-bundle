@@ -24,6 +24,11 @@ final class LogEntry
     ) {
     }
 
+    public function withDuration(float $durationMs): self
+    {
+        return new self($this->time, $this->method, $this->path, $this->status, $this->bytes, $this->clientIp, $this->userAgent, $this->referer, $durationMs);
+    }
+
     public function statusClass(): int
     {
         return intdiv($this->status, 100);

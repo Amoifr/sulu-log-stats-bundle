@@ -2,12 +2,14 @@
 
 declare(strict_types=1);
 
-namespace Amoifr\SuluLogStatsBundle\Log\Parser;
+namespace Amoifr\SuluLogStatsBundle\Connector\Upsun;
 
 use Amoifr\SuluLogStatsBundle\Log\LogEntry;
+use Amoifr\SuluLogStatsBundle\Log\Parser\LogParserInterface;
+use Amoifr\SuluLogStatsBundle\Log\Parser\RequestUri;
 
 /**
- * The PHP-FPM access log of an Upsun (Platform.sh) application container, written with the format
+ * Upsun connector: the PHP-FPM access log of an Upsun (Platform.sh) application container, written with the format
  * "%{%FT%TZ}t %m %s %{mili}d ms %{kilo}M kB %C%% %{REQUEST_URI}e":
  *
  *   2026-10-01T08:00:00Z GET 200 37.215 ms 2048 kB 12.34% /fr/offres?page=2

@@ -4,17 +4,17 @@ declare(strict_types=1);
 
 namespace Amoifr\SuluLogStatsBundle\Tests\Unit\Log\Parser;
 
-use Amoifr\SuluLogStatsBundle\Log\Parser\NginxCombinedParser;
+use Amoifr\SuluLogStatsBundle\Log\Parser\CombinedParser;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
-final class NginxCombinedParserTest extends TestCase
+final class CombinedParserTest extends TestCase
 {
     #[Test]
     public function it_reads_a_combined_line(): void
     {
-        $entry = (new NginxCombinedParser())->parse(
+        $entry = (new CombinedParser())->parse(
             '203.0.113.7 - - [01/Oct/2026:10:00:00 +0200] "GET /fr/offres?page=2 HTTP/2.0" 200 5123 "https://example.com/" "Mozilla/5.0 (X11; Linux x86_64)"',
         );
 
@@ -34,7 +34,7 @@ final class NginxCombinedParserTest extends TestCase
     #[Test]
     public function it_treats_dashes_as_missing_values(): void
     {
-        $entry = (new NginxCombinedParser())->parse('2001:db8::1 - - [01/Oct/2026:10:00:00 +0000] "HEAD / HTTP/1.1" 304 - "-" "-"');
+        $entry = (new CombinedParser())->parse('2001:db8::1 - - [01/Oct/2026:10:00:00 +0000] "HEAD / HTTP/1.1" 304 - "-" "-"');
 
         self::assertNotNull($entry);
         self::assertSame('2001:db8::1', $entry->clientIp);
@@ -48,7 +48,7 @@ final class NginxCombinedParserTest extends TestCase
     #[Test]
     public function it_ignores_fields_appended_after_the_user_agent(): void
     {
-        $entry = (new NginxCombinedParser())->parse(
+        $entry = (new CombinedParser())->parse(
             '203.0.113.7 - - [01/Oct/2026:10:00:00 +0000] "GET /fr HTTP/1.1" 404 12 "-" "curl/8.5.0" 0.012 "203.0.113.8"',
         );
 
@@ -60,7 +60,7 @@ final class NginxCombinedParserTest extends TestCase
     #[Test]
     public function it_reads_the_common_format_without_referer_nor_user_agent(): void
     {
-        $entry = (new NginxCombinedParser())->parse('203.0.113.7 - alice [01/Oct/2026:10:00:00 +0000] "POST /admin/login HTTP/1.1" 302 0');
+        $entry = (new CombinedParser())->parse('203.0.113.7 - alice [01/Oct/2026:10:00:00 +0000] "POST /admin/login HTTP/1.1" 302 0');
 
         self::assertNotNull($entry);
         self::assertSame('POST', $entry->method);
@@ -72,7 +72,7 @@ final class NginxCombinedParserTest extends TestCase
     #[DataProvider('provideUnreadableLines')]
     public function it_skips_a_line_it_cannot_read(string $line): void
     {
-        self::assertNull((new NginxCombinedParser())->parse($line));
+        self::assertNull((new CombinedParser())->parse($line));
     }
 
     /**

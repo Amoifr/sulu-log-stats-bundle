@@ -11,8 +11,9 @@ use Amoifr\SuluLogStatsBundle\Log\LogEntry;
  * Adds up log entries in memory, until {@see AggregateWriter} writes the totals.
  *
  * An entry carrying a client address (an access log) counts towards traffic, pages and visitors; an
- * entry carrying a duration (a PHP access log) towards response times. The two logs describe the same
- * requests, so neither is counted twice when both are imported.
+ * entry carrying a duration towards response times. A PHP access log (the Upsun connector) only has
+ * durations, a timed access log both: in the latter, only page requests count towards response times,
+ * since static files served in a few milliseconds would hide how fast the pages are.
  *
  * Hours are UTC hours, so that they can be shown in any time zone. Days are calendar days in the
  * configured time zone, since a daily count of visitors can't be shifted afterwards.
@@ -49,7 +50,7 @@ final class Aggregator
             $this->addTraffic($entry, $day);
         }
 
-        if (null !== $entry->durationMs) {
+        if (null !== $entry->durationMs && (null === $entry->clientIp || $this->classifier->isPagePath($entry->path))) {
             $times = $this->responseTimes[$day] ?? ['requests' => 0, 'totalMs' => 0.0, 'histogram' => []];
             ++$times['requests'];
             $times['totalMs'] += $entry->durationMs;

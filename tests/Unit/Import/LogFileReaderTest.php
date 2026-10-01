@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Amoifr\SuluLogStatsBundle\Tests\Unit\Import;
 
 use Amoifr\SuluLogStatsBundle\Import\LogFileReader;
+use PHPUnit\Framework\Attributes\RequiresPhpExtension;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
@@ -22,6 +23,8 @@ final class LogFileReaderTest extends TestCase
     protected function tearDown(): void
     {
         @unlink($this->path);
+        @unlink($this->path.'.1');
+        @unlink($this->path.'.1.gz');
     }
 
     #[Test]
@@ -130,6 +133,59 @@ final class LogFileReaderTest extends TestCase
 
         self::assertSame(6, $this->reader->resolveStart($this->path, 6, LogFileReader::hash('first'))->offset);
         self::assertTrue($this->reader->resolveStart($this->path, 6, LogFileReader::hash('other'))->lostTrack);
+    }
+
+    #[Test]
+    public function it_finishes_the_rotated_file_after_a_rename_rotation(): void
+    {
+        // "first" and "second" were read (offset 13); "third" came in, then logrotate renamed the file
+        file_put_contents($this->path.'.1', "first\nsecond\nthird\n");
+        file_put_contents($this->path, "fourth\n");
+
+        $point = $this->reader->resolveStart($this->path, 13, LogFileReader::hash('second'));
+
+        self::assertFalse($point->lostTrack);
+        self::assertSame($this->path.'.1', $point->rotatedPath);
+        self::assertSame(13, $point->rotatedOffset);
+        self::assertSame(0, $point->offset, 'then the new file from its start');
+        self::assertSame(['third'], array_values(iterator_to_array($this->reader->lines($point->rotatedPath, $point->rotatedOffset))));
+    }
+
+    #[Test]
+    public function it_finishes_the_rotated_file_after_a_copytruncate_rotation(): void
+    {
+        // copytruncate copies the log to .1 then empties it in place: the offset now overshoots
+        file_put_contents($this->path.'.1', "first\nsecond\nthird\n");
+        file_put_contents($this->path, '');
+
+        $point = $this->reader->resolveStart($this->path, 13, LogFileReader::hash('second'));
+
+        self::assertSame([$this->path.'.1', 13, 0, false], [$point->rotatedPath, $point->rotatedOffset, $point->offset, $point->lostTrack]);
+    }
+
+    #[Test]
+    #[RequiresPhpExtension('zlib')]
+    public function it_reads_a_rotated_file_compressed_right_away(): void
+    {
+        file_put_contents($this->path.'.1.gz', gzencode("first\nsecond\nthird\n"));
+        file_put_contents($this->path, "fourth\n");
+
+        $point = $this->reader->resolveStart($this->path, 13, LogFileReader::hash('second'));
+
+        self::assertSame($this->path.'.1.gz', $point->rotatedPath);
+        self::assertSame([19 => 'third'], iterator_to_array($this->reader->lines((string) $point->rotatedPath, $point->rotatedOffset)));
+    }
+
+    #[Test]
+    public function it_loses_track_when_the_rotated_file_does_not_hold_the_last_line_read_either(): void
+    {
+        file_put_contents($this->path.'.1', "older\n");
+        file_put_contents($this->path, "fourth\n");
+
+        $point = $this->reader->resolveStart($this->path, 13, LogFileReader::hash('second'));
+
+        self::assertTrue($point->lostTrack);
+        self::assertNull($point->rotatedPath);
     }
 
     #[Test]

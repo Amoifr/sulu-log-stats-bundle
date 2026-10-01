@@ -61,7 +61,11 @@ final class ImportLogsCommand extends Command
             $rows[] = [
                 $report->source,
                 $report->path,
-                $report->lostTrack ? 'restarted from the top' : 'resumed',
+                match (true) {
+                    $report->lostTrack => 'restarted from the top',
+                    null !== $report->rotatedPath => 'finished '.basename($report->rotatedPath).', then resumed',
+                    default => 'resumed',
+                },
                 $report->linesRead,
                 $report->entriesImported,
                 $report->unreadableLines + $report->skippedLines,

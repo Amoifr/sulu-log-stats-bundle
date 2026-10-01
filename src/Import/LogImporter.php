@@ -67,6 +67,7 @@ final class LogImporter
         $cursor = $this->cursor($name);
         $point = $this->reader->resolveStart($path, $cursor->getOffset(), $cursor->getLastLineHash());
         $report->lostTrack = $point->lostTrack;
+        $report->rotatedPath = $point->rotatedPath;
 
         // after losing track, the top of the file may hold lines imported already: skip what is older
         $notBefore = $point->lostTrack ? $cursor->getLastEntryTime() : null;
@@ -78,29 +79,41 @@ final class LogImporter
         $lastTime = null;
         $pending = 0;
 
-        foreach ($this->reader->lines($path, $point->offset) as $offset => $line) {
-            ++$report->linesRead;
-            ++$pending;
-            $lastHash = LogFileReader::hash($line);
+        // a rotated log is finished first, then the new one is read from its start
+        $files = null === $point->rotatedPath ? [] : [[$point->rotatedPath, $point->rotatedOffset]];
+        $files[] = [$path, $point->offset];
 
-            $entry = $parser->parse($line);
-            if (null === $entry) {
-                ++$report->unreadableLines;
-            } elseif (null !== $notBefore && $entry->time < $notBefore) {
-                ++$report->skippedLines;
-            } else {
-                $aggregator->add($entry);
-                ++$report->entriesImported;
-                $lastTime = $entry->time;
+        foreach ($files as [$file, $start]) {
+            if ($file === $path) {
+                $offset = $start;
             }
 
-            if ($pending >= $this->chunkSize) {
-                $this->save($name, $aggregator, $offset, $lastHash, $lastTime);
-                $pending = 0;
+            foreach ($this->reader->lines($file, $start) as $offset => $line) {
+                ++$report->linesRead;
+                ++$pending;
+                $lastHash = LogFileReader::hash($line);
+
+                $entry = $parser->parse($line);
+                if (null === $entry) {
+                    ++$report->unreadableLines;
+                } elseif (null !== $notBefore && $entry->time < $notBefore) {
+                    ++$report->skippedLines;
+                } else {
+                    $aggregator->add($entry);
+                    ++$report->entriesImported;
+                    $lastTime = $entry->time;
+                }
+
+                // within the rotated file, the saved offset is one of that file: if the import stops
+                // there, the next one finds the line read last in the rotated file again
+                if ($pending >= $this->chunkSize) {
+                    $this->save($name, $aggregator, $offset, $lastHash, $lastTime);
+                    $pending = 0;
+                }
             }
         }
 
-        if ($pending > 0 || $point->offset !== $cursor->getOffset()) {
+        if ($pending > 0 || $point->offset !== $cursor->getOffset() || null !== $point->rotatedPath) {
             $this->save($name, $aggregator, $offset, $lastHash, $lastTime);
         }
 

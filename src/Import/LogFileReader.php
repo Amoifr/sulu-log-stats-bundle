@@ -7,11 +7,17 @@ namespace Amoifr\SuluLogStatsBundle\Import;
 /**
  * Reads the complete lines a log file gained since the previous import.
  *
- * Hosts trim or rotate their logs (Upsun cuts them to 100 MB), so an offset alone can't tell where to
- * resume: the line ending at the stored offset must still be the one read last time.
+ * Logs get rotated (logrotate renames access.log to access.log.1, then compresses it) or trimmed in
+ * place (copytruncate, or a host capping their size), so an offset alone can't tell where to resume:
+ * the line ending at the stored offset must still be the one read last time.
  */
 final class LogFileReader
 {
+    /**
+     * Where logrotate moves a log: plain when it delays compression ("delaycompress"), gzipped otherwise.
+     */
+    private const ROTATED_SUFFIXES = ['.1', '.1.gz'];
+
     public static function hash(string $line): string
     {
         return hash('sha256', $line);
@@ -19,7 +25,8 @@ final class LogFileReader
 
     /**
      * Where to resume reading: the stored offset if the file only grew since, right after the last
-     * line read if the file was trimmed but still holds it, or the start of the file otherwise.
+     * line read if the file was trimmed but still holds it, after that line in the rotated file if the
+     * log was rotated (then the new file from its start), or the start of the file otherwise.
      */
     public function resolveStart(string $path, int $offset, ?string $lastLineHash): ResumePoint
     {
@@ -37,9 +44,15 @@ final class LogFileReader
             return new ResumePoint($offset, false);
         }
 
-        foreach ($this->lines($path, 0) as $end => $line) {
-            if (self::hash($line) === $lastLineHash) {
-                return new ResumePoint($end, false);
+        $end = $this->find($path, $lastLineHash);
+        if (null !== $end) {
+            return new ResumePoint($end, false);
+        }
+
+        foreach (self::ROTATED_SUFFIXES as $suffix) {
+            $rotated = $path.$suffix;
+            if (is_file($rotated) && null !== $end = $this->find($rotated, $lastLineHash)) {
+                return new ResumePoint(0, false, $rotated, $end);
             }
         }
 
@@ -54,7 +67,8 @@ final class LogFileReader
      */
     public function lines(string $path, int $offset): \Generator
     {
-        $handle = @fopen($path, 'r');
+        // offsets in a gzipped file are offsets in its uncompressed content
+        $handle = @fopen(str_ends_with($path, '.gz') ? 'compress.zlib://'.$path : $path, 'r');
         if (false === $handle) {
             return;
         }
@@ -77,6 +91,20 @@ final class LogFileReader
         } finally {
             fclose($handle);
         }
+    }
+
+    /**
+     * The offset right after the line with the given hash, or null if the file does not hold it.
+     */
+    private function find(string $path, string $lineHash): ?int
+    {
+        foreach ($this->lines($path, 0) as $end => $line) {
+            if (self::hash($line) === $lineHash) {
+                return $end;
+            }
+        }
+
+        return null;
     }
 
     /**

@@ -18,6 +18,9 @@ final class ImportReport
     /** The line read last is gone: the file was replaced, or trimmed past it. */
     public bool $lostTrack = false;
 
+    /** The rotated file whose remaining lines were read first, if the log was rotated since the previous import. */
+    public ?string $rotatedPath = null;
+
     public function __construct(
         public readonly string $source,
         public readonly string $path,

@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Amoifr\SuluLogStatsBundle\Tests\Unit\Log\Parser;
+namespace Amoifr\SuluLogStatsBundle\Tests\Unit\Connector\Upsun;
 
-use Amoifr\SuluLogStatsBundle\Log\Parser\UpsunPhpAccessParser;
+use Amoifr\SuluLogStatsBundle\Connector\Upsun\UpsunPhpAccessParser;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;

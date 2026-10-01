@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Amoifr\SuluLogStatsBundle\Tests\Unit\Import;
 
+use Amoifr\SuluLogStatsBundle\Connector\Upsun\UpsunPhpAccessParser;
 use Amoifr\SuluLogStatsBundle\Entity\DailyPage;
 use Amoifr\SuluLogStatsBundle\Entity\DailyResponseTime;
 use Amoifr\SuluLogStatsBundle\Entity\DailyVisitors;
@@ -15,9 +16,9 @@ use Amoifr\SuluLogStatsBundle\Import\LogFileReader;
 use Amoifr\SuluLogStatsBundle\Import\LogImporter;
 use Amoifr\SuluLogStatsBundle\Import\RequestClassifier;
 use Amoifr\SuluLogStatsBundle\Import\VisitorDays;
-use Amoifr\SuluLogStatsBundle\Log\Parser\NginxCombinedParser;
+use Amoifr\SuluLogStatsBundle\Log\Parser\CombinedParser;
+use Amoifr\SuluLogStatsBundle\Log\Parser\NginxTimedParser;
 use Amoifr\SuluLogStatsBundle\Log\Parser\ParserRegistry;
-use Amoifr\SuluLogStatsBundle\Log\Parser\UpsunPhpAccessParser;
 use Amoifr\SuluLogStatsBundle\Tests\TestEntityManager;
 use Doctrine\ORM\EntityManager;
 use PHPUnit\Framework\Attributes\RequiresPhpExtension;
@@ -47,6 +48,7 @@ final class LogImporterTest extends TestCase
     protected function tearDown(): void
     {
         @unlink($this->access);
+        @unlink($this->access.'.1');
         @unlink($this->php);
     }
 
@@ -157,6 +159,55 @@ final class LogImporterTest extends TestCase
     }
 
     #[Test]
+    public function no_line_is_lost_nor_counted_twice_across_a_rotation(): void
+    {
+        $this->write($this->access, [
+            self::access('10:00:00', '203.0.113.1', 'GET /fr/a', 200, 100),
+            self::access('10:01:00', '203.0.113.1', 'GET /fr/b', 200, 100),
+        ]);
+        $importer = $this->importer(['access' => $this->access], chunkSize: 1);
+        $importer->importAll();
+
+        // a line comes in, then logrotate renames the log and the server writes a new one
+        $this->write($this->access, [self::access('10:02:00', '203.0.113.1', 'GET /fr/c', 200, 100)], append: true);
+        rename($this->access, $this->access.'.1');
+        $this->write($this->access, [self::access('10:03:00', '203.0.113.1', 'GET /fr/d', 200, 100)]);
+
+        [$report] = $importer->importAll();
+
+        self::assertSame($this->access.'.1', $report->rotatedPath);
+        self::assertSame(2, $report->linesRead);
+        self::assertSame(['/fr/a' => [1, 0, 0], '/fr/b' => [1, 0, 0], '/fr/c' => [1, 0, 0], '/fr/d' => [1, 0, 0]], $this->pages());
+
+        // later runs read the new file only
+        $this->write($this->access, [self::access('10:04:00', '203.0.113.1', 'GET /fr/e', 200, 100)], append: true);
+        [$report] = $importer->importAll();
+
+        self::assertNull($report->rotatedPath);
+        self::assertSame(1, $report->linesRead);
+        self::assertSame([1, 1, 1, 1, 1], array_column($this->pages(), 0));
+    }
+
+    #[Test]
+    public function a_rotation_with_no_new_line_yet_resumes_on_the_new_file(): void
+    {
+        $this->write($this->access, [self::access('10:00:00', '203.0.113.1', 'GET /fr/a', 200, 100)]);
+        $importer = $this->importer(['access' => $this->access]);
+        $importer->importAll();
+
+        $this->write($this->access, [self::access('10:01:00', '203.0.113.1', 'GET /fr/b', 200, 100)], append: true);
+        rename($this->access, $this->access.'.1');
+        file_put_contents($this->access, '');
+        $importer->importAll();
+
+        $this->write($this->access, [self::access('10:02:00', '203.0.113.1', 'GET /fr/c', 200, 100)]);
+        [$report] = $importer->importAll();
+
+        self::assertNull($report->rotatedPath, 'the rotated file was finished by the previous run');
+        self::assertSame(['/fr/a' => [1, 0, 0], '/fr/b' => [1, 0, 0], '/fr/c' => [1, 0, 0]], $this->pages());
+    }
+
+    #[Test]
     public function chunks_add_up_to_the_same_totals(): void
     {
         $lines = [];
@@ -191,6 +242,26 @@ final class LogImporterTest extends TestCase
         self::assertSame(3, $times?->getRequests());
         self::assertSame(12160.5, $times->getTotalMs());
         self::assertSame(['25' => 1, '200' => 1, DailyResponseTime::OVERFLOW_BUCKET => 1], $times->getHistogram());
+    }
+
+    #[Test]
+    public function a_timed_access_log_feeds_response_times_with_its_page_requests_only(): void
+    {
+        $this->write($this->access, [
+            self::access('10:00:00', '203.0.113.1', 'GET /fr', 200, 100).' 0.200',
+            self::access('10:00:01', '203.0.113.1', 'GET /fr/offres', 404, 100).' 0.040',
+            self::access('10:00:02', '203.0.113.1', 'GET /build/app.css', 200, 100).' 0.001',
+            self::access('10:00:03', '203.0.113.1', 'POST /admin/login', 302, 100).' 0.300',
+        ]);
+
+        [$report] = $this->importer(['access' => $this->access], formats: ['access' => 'nginx_timed'])->importAll();
+
+        self::assertSame(4, $report->entriesImported);
+        self::assertSame(['/fr' => [1, 0, 0], '/fr/offres' => [0, 1, 0]], $this->pages(), 'traffic and pages are read from the same lines');
+
+        $times = $this->em->getRepository(DailyResponseTime::class)->findOneBy(['day' => new \DateTimeImmutable('2026-10-01')]);
+        self::assertSame(2, $times?->getRequests(), 'the asset and the admin request are left out');
+        self::assertSame(240.0, $times->getTotalMs());
     }
 
     #[Test]
@@ -248,19 +319,20 @@ final class LogImporterTest extends TestCase
     }
 
     /**
-     * @param array<string, string> $files
+     * @param array<string, string> $files   path by source name
+     * @param array<string, string> $formats format by source name, "combined" by default and "upsun_php_access" for "php"
      */
-    private function importer(array $files, int $chunkSize = 20_000, string $timezone = 'UTC'): LogImporter
+    private function importer(array $files, int $chunkSize = 20_000, string $timezone = 'UTC', array $formats = []): LogImporter
     {
         $sources = [];
         foreach ($files as $name => $path) {
-            $sources[$name] = ['path' => $path, 'format' => 'php' === $name ? 'upsun_php_access' : 'combined'];
+            $sources[$name] = ['path' => $path, 'format' => $formats[$name] ?? ('php' === $name ? 'upsun_php_access' : 'combined')];
         }
 
         return new LogImporter(
             $this->em,
             new LogFileReader(),
-            new ParserRegistry([new NginxCombinedParser(), new UpsunPhpAccessParser()]),
+            new ParserRegistry([new CombinedParser(), new NginxTimedParser(), new UpsunPhpAccessParser()]),
             new RequestClassifier('~bot~i', ['/admin', '/build'], ['css']),
             new AggregateWriter($this->em),
             new VisitorDays($this->em),
