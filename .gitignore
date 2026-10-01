@@ -1,0 +1,14 @@
+/vendor/
+/composer.lock
+/.phpunit.cache/
+/.phpunit.result.cache
+/phpunit.xml
+
+# Admin JavaScript dependencies (installed by the host project build)
+/assets/js/node_modules/
+
+# Test application runtime artifacts
+/tests/Application/var/
+
+# IDE
+/.idea/

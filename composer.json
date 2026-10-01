@@ -1,0 +1,44 @@
+{
+    "name": "amoifr/sulu-log-stats-bundle",
+    "description": "Sulu 3 bundle that parses web server access logs into aggregated tables and shows traffic, status code and response time KPIs in the Sulu admin.",
+    "type": "symfony-bundle",
+    "license": "MIT",
+    "keywords": ["sulu", "sulu-bundle", "symfony", "logs", "analytics", "nginx", "kpi"],
+    "authors": [
+        {
+            "name": "Pascal CESCON",
+            "email": "pascal.cescon@gmail.com",
+            "homepage": "https://github.com/Amoifr"
+        }
+    ],
+    "require": {
+        "php": ">=8.2",
+        "doctrine/doctrine-bundle": "^2.11 || ^3.0",
+        "doctrine/orm": "^3.0",
+        "sulu/sulu": "~3.0",
+        "symfony/config": "^7.1 || ^8.0",
+        "symfony/console": "^7.1 || ^8.0",
+        "symfony/dependency-injection": "^7.1 || ^8.0",
+        "symfony/framework-bundle": "^7.1 || ^8.0",
+        "symfony/http-kernel": "^7.1 || ^8.0",
+        "symfony/lock": "^7.1 || ^8.0"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^11.0 || ^12.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Amoifr\\SuluLogStatsBundle\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Amoifr\\SuluLogStatsBundle\\Tests\\": "tests/"
+        }
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true,
+    "config": {
+        "sort-packages": true
+    }
+}
