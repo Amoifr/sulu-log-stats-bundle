@@ -1,0 +1,14 @@
+{
+    "name": "sulu-log-stats-bundle",
+    "description": "Admin dashboard of amoifr/sulu-log-stats-bundle: traffic, status codes and response times read from the server logs",
+    "license": "MIT",
+    "repository": "https://github.com/Amoifr/sulu-log-stats-bundle.git",
+    "main": "index.js",
+    "dependencies": {
+        "chart.js": "^4.4.0"
+    },
+    "peerDependencies": {
+        "react": "^16.2.0 || ^17.0.0",
+        "sulu-admin-bundle": "*"
+    }
+}

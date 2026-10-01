@@ -1,0 +1,183 @@
+$surface: #fcfcfb;
+$ink-primary: #0b0b0b;
+$ink-secondary: #52514e;
+$ink-muted: #898781;
+$hairline: rgba(11, 11, 11, .1);
+$gridline: #e1e0d9;
+
+.dashboard {
+    color: $ink-primary;
+    display: flex;
+    flex-direction: column;
+    font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+    gap: 24px;
+    padding: 24px;
+}
+
+.toolbar {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 16px;
+}
+
+.presets {
+    display: flex;
+    gap: 4px;
+}
+
+.preset {
+    background: transparent;
+    border: 1px solid $hairline;
+    border-radius: 4px;
+    color: $ink-secondary;
+    cursor: pointer;
+    font: inherit;
+    padding: 4px 10px;
+
+    &:hover {
+        background: rgba(11, 11, 11, .04);
+    }
+}
+
+.preset-active {
+    border-color: $ink-primary;
+    color: $ink-primary;
+    font-weight: bold;
+}
+
+.range {
+    align-items: center;
+    color: $ink-secondary;
+    display: flex;
+    gap: 8px;
+
+    input {
+        border: 1px solid $hairline;
+        border-radius: 4px;
+        font: inherit;
+        padding: 3px 6px;
+    }
+}
+
+.timezone {
+    color: $ink-muted;
+    font-size: 12px;
+}
+
+.message {
+    background: $surface;
+    border: 1px solid $hairline;
+    border-radius: 8px;
+    color: $ink-secondary;
+    padding: 16px;
+}
+
+.tiles {
+    display: grid;
+    gap: 12px;
+    grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+}
+
+.tile {
+    background: $surface;
+    border: 1px solid $hairline;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 12px 16px;
+}
+
+.tile-label {
+    color: $ink-secondary;
+    font-size: 12px;
+}
+
+.tile-value {
+    font-size: 24px;
+    font-weight: 600;
+}
+
+.tile-hint {
+    color: $ink-muted;
+    font-size: 12px;
+}
+
+.charts {
+    display: grid;
+    gap: 16px;
+    grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
+}
+
+.card {
+    background: $surface;
+    border: 1px solid $hairline;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 0;
+    padding: 16px;
+
+    h3 {
+        font-size: 14px;
+        font-weight: 600;
+        margin: 0;
+    }
+}
+
+// the canvas fills this box, axis labels included: no nested scroll
+.chart {
+    height: 260px;
+    position: relative;
+}
+
+.tables {
+    display: grid;
+    gap: 16px;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+}
+
+.table {
+    border-collapse: collapse;
+    font-size: 13px;
+    width: 100%;
+
+    th {
+        border-bottom: 1px solid $gridline;
+        color: $ink-secondary;
+        font-weight: 600;
+        padding: 6px 8px;
+        text-align: left;
+        white-space: nowrap;
+    }
+
+    td {
+        border-bottom: 1px solid $gridline;
+        padding: 6px 8px;
+    }
+}
+
+.number {
+    font-variant-numeric: tabular-nums;
+    text-align: right !important;
+    white-space: nowrap;
+}
+
+.path {
+    overflow-wrap: anywhere;
+}
+
+.empty {
+    color: $ink-muted;
+}
+
+.details summary {
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.scroll {
+    overflow-x: auto;
+}
